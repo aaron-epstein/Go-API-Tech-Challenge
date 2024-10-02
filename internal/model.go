@@ -26,7 +26,6 @@ func (p *Person) UnmarshalJSON(data []byte) error {
 	if str == "null" || str == `""` {
 		return nil
 	}
-	// Out(str)
 
 	var person PersonJSON
 	dec := json.NewDecoder(bytes.NewReader(data))
@@ -34,7 +33,6 @@ func (p *Person) UnmarshalJSON(data []byte) error {
 	if err := dec.Decode(&person); err != nil {
 		return err
 	}
-	// Out(person)
 
 	courses := make([]Course, len(person.Courses))
 	for i, id := range person.Courses {
@@ -48,7 +46,6 @@ func (p *Person) UnmarshalJSON(data []byte) error {
 		Age:       person.Age,
 		Courses:   courses,
 	}
-	// Out(p)
 	return nil
 }
 

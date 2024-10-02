@@ -11,7 +11,6 @@ import (
 )
 
 func GetCourses(w http.ResponseWriter, r *http.Request) {
-	Out(DB)
 	var courses []Course
 	DB.Find(&courses)
 	render.JSON(w, r, courses)

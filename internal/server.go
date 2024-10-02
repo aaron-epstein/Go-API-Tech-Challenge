@@ -12,11 +12,11 @@ import (
 var err error
 
 func RunServer() {
-	r := initServer()
+	r := InitServer()
 	runServer(r)
 }
 
-func initServer() chi.Router {
+func InitServer() *chi.Mux {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -41,7 +41,7 @@ func initServer() chi.Router {
 	return r
 }
 
-func runServer(r chi.Router) {
+func runServer(r *chi.Mux) {
 	HTTP_PORT := os.Getenv("HTTP_PORT")
 
 	Outf("Starting server on port %v", HTTP_PORT)
