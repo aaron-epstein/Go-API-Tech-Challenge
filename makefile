@@ -18,5 +18,6 @@ db_down:
 run_app:
 	docker-compose up
 
+.PHONY: run_go
 run_go:
 	go run .
