@@ -10,98 +10,158 @@ import (
 	"testing"
 
 	"github.com/aaron-epstein/Go-API-Tech-Challenge/internal"
-	"github.com/go-chi/chi/v5"
 	"github.com/joho/godotenv"
 	"github.com/stretchr/testify/require"
 )
 
-func executeRequest(req *http.Request, r *chi.Mux) *httptest.ResponseRecorder {
-	rr := httptest.NewRecorder()
-	r.ServeHTTP(rr, req)
-	return rr
+func handleCourse() func(TestContext, *httptest.ResponseRecorder) error {
+	return handleCourseFn(func(tctx TestContext, course internal.Course) error { return nil })
 }
 
-func testCourses(t *testing.T, r *chi.Mux) {
+func handleCourseFn(fn func(TestContext, internal.Course) error) func(TestContext, *httptest.ResponseRecorder) error {
+	return func(tctx TestContext, res *httptest.ResponseRecorder) error {
+		fmt.Println("Start course", res.Body.String())
+		var course internal.Course
+		err := json.NewDecoder(bytes.NewReader(res.Body.Bytes())).Decode(&course)
+		fmt.Println("Course:", course)
+		if err != nil {
+			require.Nil(tctx.T, err)
+			return err
+		}
+		if fn != nil {
+			err = fn(tctx, course)
+			if err != nil {
+				require.Nil(tctx.T, err)
+				return err
+			}
+		}
 
-	var req *http.Request
-	var response *httptest.ResponseRecorder
-	var payload *bytes.Reader
-
-	req, _ = http.NewRequest("GET", "/api/course", nil)
-	response = executeRequest(req, r)
-	require.Equal(t, http.StatusOK, response.Code)
-
-	req, _ = http.NewRequest("GET", "/api/course/1", nil)
-	response = executeRequest(req, r)
-	require.Equal(t, http.StatusOK, response.Code)
-
-	payload = bytes.NewReader([]byte(`{
-		"name": "Test User"
-	}`))
-	req, _ = http.NewRequest("POST", "/api/course", payload)
-	req.Header.Add("Content-Type", "application/json")
-	response = executeRequest(req, r)
-	require.Equal(t, http.StatusCreated, response.Code)
-	var course internal.Course
-	json.NewDecoder(bytes.NewReader(response.Body.Bytes())).Decode(&course)
-	id := fmt.Sprintf("%d", course.ID)
-
-	payload = bytes.NewReader([]byte(`{
-		"name": "Test User Modified"
-	}`))
-	req, _ = http.NewRequest("PUT", "/api/course/"+id, payload)
-	req.Header.Add("Content-Type", "application/json")
-	response = executeRequest(req, r)
-	require.Equal(t, http.StatusAccepted, response.Code)
-
-	req, _ = http.NewRequest("DELETE", "/api/course/"+id, nil)
-	response = executeRequest(req, r)
-	require.Equal(t, http.StatusOK, response.Code)
+		return nil
+	}
 }
 
-func testPersons(t *testing.T, r *chi.Mux) {
+func handleCourses() func(TestContext, *httptest.ResponseRecorder) error {
+	return handleCoursesFn(func(tctx TestContext, courses []internal.Course) error { return nil })
+}
 
-	var req *http.Request
-	var response *httptest.ResponseRecorder
-	var payload *bytes.Reader
+func handleCoursesFn(fn func(TestContext, []internal.Course) error) func(TestContext, *httptest.ResponseRecorder) error {
+	return func(tctx TestContext, res *httptest.ResponseRecorder) error {
+		var courses []internal.Course
+		err := json.NewDecoder(bytes.NewReader(res.Body.Bytes())).Decode(&courses)
+		if err != nil {
+			require.Nil(tctx.T, err)
+			return err
+		}
+		if fn != nil {
+			err = fn(tctx, courses)
+			if err != nil {
+				require.Nil(tctx.T, err)
+				return err
+			}
+		}
 
-	name := "Test User"
+		return nil
+	}
+}
 
-	req, _ = http.NewRequest("GET", "/api/person", nil)
-	response = executeRequest(req, r)
-	require.Equal(t, http.StatusOK, response.Code)
+func handlePerson() func(TestContext, *httptest.ResponseRecorder) error {
+	return handlePersonFn(func(tctx TestContext, course internal.PersonResponse) error { return nil })
+}
 
-	req, _ = http.NewRequest("GET", "/api/person/Bill Gates", nil)
-	response = executeRequest(req, r)
-	require.Equal(t, http.StatusOK, response.Code)
+func handlePersonFn(fn func(TestContext, internal.PersonResponse) error) func(TestContext, *httptest.ResponseRecorder) error {
+	return func(tctx TestContext, res *httptest.ResponseRecorder) error {
+		var person internal.PersonResponse
+		err := json.NewDecoder(bytes.NewReader(res.Body.Bytes())).Decode(&person)
+		if err != nil {
+			require.Nil(tctx.T, err)
+			return err
+		}
+		if fn != nil {
+			err = fn(tctx, person)
+			if err != nil {
+				require.Nil(tctx.T, err)
+				return err
+			}
+		}
 
-	payload = bytes.NewReader([]byte(`{
-		"first_name": "Test",
-		"last_name": "User",
-		"type": "student",
-		"age": 24,
-		"courses": [1, 2]
-	}`))
-	req, _ = http.NewRequest("POST", "/api/person", payload)
-	req.Header.Add("Content-Type", "application/json")
-	response = executeRequest(req, r)
-	require.Equal(t, http.StatusCreated, response.Code)
+		return nil
+	}
+}
 
-	payload = bytes.NewReader([]byte(`{
-		"first_name": "Test",
-		"last_name": "User",
-		"type": "professor",
-		"age": 25,
-		"courses": [2, 3]
-	}`))
-	req, _ = http.NewRequest("PUT", "/api/person/"+name, payload)
-	req.Header.Add("Content-Type", "application/json")
-	response = executeRequest(req, r)
-	require.Equal(t, http.StatusAccepted, response.Code)
+func handlePersons() func(TestContext, *httptest.ResponseRecorder) error {
+	return handlePersonsFn(func(tctx TestContext, persons []internal.PersonResponse) error { return nil })
+}
 
-	req, _ = http.NewRequest("DELETE", "/api/person/"+name, nil)
-	response = executeRequest(req, r)
-	require.Equal(t, http.StatusOK, response.Code)
+func handlePersonsFn(fn func(TestContext, []internal.PersonResponse) error) func(TestContext, *httptest.ResponseRecorder) error {
+	return func(tctx TestContext, res *httptest.ResponseRecorder) error {
+		var persons []internal.PersonResponse
+		err := json.NewDecoder(bytes.NewReader(res.Body.Bytes())).Decode(&persons)
+		if err != nil {
+			require.Nil(tctx.T, err)
+			return err
+		}
+		if fn != nil {
+			err = fn(tctx, persons)
+			if err != nil {
+				require.Nil(tctx.T, err)
+				return err
+			}
+		}
+
+		return nil
+	}
+}
+
+func testCourses(tctx TestContext) {
+
+	tests := []UnitTest{
+		{Method: "GET", Url: "/api/course", Status: http.StatusOK, ResponseFn: handleCourses()},
+		{Method: "GET", Url: "/api/course/1", Status: http.StatusOK, ResponseFn: handleCourse()},
+		{Method: "POST", Url: "/api/course", Status: http.StatusCreated, Body: `
+    {
+      "name": "Test User"
+    }`, ResponseFn: handleCourseFn(func(tctx TestContext, course internal.Course) error {
+			id := fmt.Sprintf("%d", course.ID)
+			tctx.Vars["id"] = id
+			return nil
+		})},
+		{Method: "PUT", Url: "/api/course/{id}", Status: http.StatusAccepted, Body: `
+    {
+      "name": "Test User Modified"
+    }`, ResponseFn: handleCourse()},
+		{Method: "DELETE", Url: "/api/course/{id}", Status: http.StatusOK},
+	}
+
+	executeTests(tctx, tests)
+}
+
+func testPersons(tctx TestContext) {
+
+	tctx.Vars["name"] = "Test User"
+
+	tests := []UnitTest{
+		{Method: "GET", Url: "/api/person", Status: http.StatusOK, ResponseFn: handlePersons()},
+		{Method: "GET", Url: "/api/person/Bill Gates", Status: http.StatusOK, ResponseFn: handlePerson()},
+		{Method: "POST", Url: "/api/person", Status: http.StatusCreated, Body: `
+    {
+      "first_name": "Test",
+      "last_name": "User",
+      "type": "student",
+      "age": 24,
+      "courses": [1, 2]
+		}`, ResponseFn: handlePerson()},
+		{Method: "PUT", Url: "/api/person/{name}", Status: http.StatusAccepted, Body: `
+    {
+      "first_name": "Test",
+      "last_name": "User",
+      "type": "professor",
+      "age": 25,
+      "courses": [2, 3]
+    }`, ResponseFn: handlePerson()},
+		{Method: "DELETE", Url: "/api/person/{name}", Status: http.StatusOK},
+	}
+
+	executeTests(tctx, tests)
 }
 
 func TestMain(t *testing.T) {
@@ -118,7 +178,8 @@ func TestMain(t *testing.T) {
 
 	r := internal.InitServer()
 
-	testCourses(t, r)
-	testPersons(t, r)
+	tctx := NewTestContext(t, r)
+	testCourses(tctx)
+	testPersons(tctx)
 
 }
